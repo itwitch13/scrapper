@@ -1,12 +1,15 @@
 from bs4 import BeautifulSoup as soup  # HTML data structure
 from urllib.request import urlopen as uReq  # Web client
-import pandas as pd
+from mongo import MongoDatabase
 
 
 class Scrapper:
     def __init__(self):
         self.page_url = "https://www.otodom.pl/sprzedaz/nowe-mieszkanie/krakow/?search%5Bregion_id%5D=6&search%5Bcity_id%5D=38"
         self.data_page = []
+
+    def prepareMongo(self):
+        self.db = MongoDatabase()
 
     def getPageData(self):
         client = uReq(self.page_url)
@@ -34,10 +37,10 @@ class Scrapper:
                 # detail = [detail.text for detail in details]
                 # print(prizes_m, area, rooms)
 
-
+    def run(self):
+        self.getPageData()
+        self.getFlatInfo()
 
 
 scrapper = Scrapper()
-
-scrapper.getPageData()
-scrapper.getFlatInfo()
+scrapper.run()
