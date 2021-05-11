@@ -1,18 +1,19 @@
 from pymongo import MongoClient
 from dbConfig import *
+import json
 
 
 class MongoDatabase:
     def __init__(self):
         url = 'mongodb+srv://{}:{}@{}.net/{}?retryWrites=true&w=majority'\
             .format(db_user, db_password, db_cluster, db_name)
-        print(url)
+        self.client = MongoClient(url)
+        self.db = self.client[db_name]
 
-        self.db = MongoClient(url)
-        self.connect()
+    def upload_dataframe(self, df_data):
+        collection = self.db[db_collection]
 
-    def connect(self):
-        print(self.db.list_databases())
-        self.db.close()
+        records = json.loads(df_data.T.to_json()).values()
+        collection.insert_many(records)
 
-MongoDatabase()
+        self.client.close()

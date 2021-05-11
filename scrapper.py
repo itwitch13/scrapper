@@ -1,22 +1,20 @@
 import csv
+import pandas as pd
 
 from bs4 import BeautifulSoup as soup  # HTML data structure
 from urllib.request import urlopen as uReq  # Web client
 from mongo import MongoDatabase
-import pandas as pd
 
 
 class Scrapper:
     def __init__(self):
         self.data_page = []
         self.all_info = []
-
-    def prepareMongo(self):
         self.db = MongoDatabase()
 
-    def getPageNumber(self):
+    def get_page_number(self):
         page_number = 1
-        self.getPageData(page_number)
+        self.get_page_data(page_number)
         pages = self.data_page.findAll("ul", {"class": "pager"})
 
         for page in pages:
@@ -24,7 +22,7 @@ class Scrapper:
 
         return page_number
 
-    def getPageData(self, page_number):
+    def get_page_data(self, page_number):
         # mieszkania w Krakowie od 30m²
         self.number_page_url = 'https://www.otodom.pl/sprzedaz/nowe-mieszkanie/krakow/?search%5Bfilter_float_m%3Afrom%5D=30&search%5Bregion_id%5D=6&search%5Bcity_id%5D=38&nrAdsPerPage=72&page={}'.format(page_number)
         # mieszkania w Krakowie od 30-50m², 2-3 pokoi, max 8.500zł/m²
@@ -33,7 +31,7 @@ class Scrapper:
         self.data_page = soup(client.read(), "html.parser")
         client.close()
 
-    def getFlatInfo(self):
+    def get_flat_info(self):
         offer_items = self.data_page.findAll("div", {"class": "offer-item-details"})
         flat_locations = self.data_page.find_all("header", {"class": "offer-item-header"})
 
@@ -58,14 +56,14 @@ class Scrapper:
                     })
 
     def run(self):
-        page_numbers = self.getPageNumber()
+        page_numbers = self.get_page_number()
 
         for page in range(1, page_numbers):
-            self.getPageData(page)
-            self.getFlatInfo()
+            self.get_page_data(page)
+            self.get_flat_info()
 
         df = pd.DataFrame(self.all_info)
-        print(df)
+        self.db.upload_dataframe(df)
 
         headers = self.all_info[0].keys()
         with open('./flat_info.csv', 'w', newline='') as output_file:
