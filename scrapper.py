@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup as soup  # HTML data structure
 from urllib.request import urlopen as uReq  # Web client
 from mongo import MongoDatabase
+import pandas as pd
 
 
 class Scrapper:
@@ -19,23 +20,26 @@ class Scrapper:
     def getFlatInfo(self):
         offer_items = self.data_page.findAll("div", {"class": "offer-item-details"})
         flat_locations = self.data_page.find_all("header", {"class": "offer-item-header"})
-
-        # flat_locations = offer_items.findAll("p", {"class": "text-nowrap"})
-        # flat_details = offer_items.findAll("ul", {"class": "params"})
+        all = []
         for flat, offer_detail in zip(flat_locations, offer_items):
-            location = flat.find_all("p", {"class": "text-nowrap"})
+            location = flat.select('p.text-nowrap')[0].text.split(': ')[1]
             flat_details = offer_detail.findAll("ul", {"class": "params"})
-            prizes_m = []
-            area = []
-            rooms = []
+
             for details in flat_details:
-                print(details)
-                # prizes = details.find_ll("li", {"class": "offer-item-price"})
-                prizes_m.append(details.find("li", {"class": "hidden-xs offer-item-price-per-m"}))
-                area.append(details.find("li", {"class": "hidden-xs offer-item-area"}))
-                rooms.append(details.find("li", {"class": "offer-item-rooms hidden-xs"}))
-                # detail = [detail.text for detail in details]
-                # print(prizes_m, area, rooms)
+                price = details.select('li.offer-item-price')[0].text.strip()
+                if 'zł' in price:
+                    price = price.split('zł')[0]
+                    price_per_meter = details.select('li.hidden-xs.offer-item-price-per-m')[0].text.split('zł/m')[0]
+                    area = details.select('li.hidden-xs.offer-item-area')[0].text.split('m')[0]
+                    rooms = details.select('li.offer-item-rooms.hidden-xs')[0].text.split(' ')[0]
+
+                    all.append({
+                        "location": location,
+                        "zł/m²": price_per_meter,
+                        "zł": price,
+                        "m²": area,
+                        "rooms": rooms
+                    })
 
     def run(self):
         self.getPageData()

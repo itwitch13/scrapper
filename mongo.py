@@ -4,9 +4,15 @@ from dbConfig import *
 
 class MongoDatabase:
     def __init__(self):
-        url = "mongodb+srv://{}:{}@{}.net/{}?retryWrites=true&w=majority"\
+        url = 'mongodb+srv://{}:{}@{}.net/{}?retryWrites=true&w=majority'\
             .format(db_user, db_password, db_cluster, db_name)
-        self.db = MongoClient(db_name, host=url)
+        print(url)
+
+        self.db = MongoClient(url)
+        self.connect()
 
     def connect(self):
-        pass
+        print(self.db.list_databases())
+        self.db.close()
+
+MongoDatabase()
