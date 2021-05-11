@@ -28,18 +28,21 @@ class Scrapper:
             for details in flat_details:
                 price = details.select('li.offer-item-price')[0].text.strip()
                 if 'zł' in price:
-                    price = price.split('zł')[0]
-                    price_per_meter = details.select('li.hidden-xs.offer-item-price-per-m')[0].text.split('zł/m')[0]
-                    area = details.select('li.hidden-xs.offer-item-area')[0].text.split('m')[0]
+                    price = price.split('zł')[0].replace(' ', '')
+                    price_per_meter = details.select('li.hidden-xs.offer-item-price-per-m')[0].text.split('zł/m')[0].replace(' ', '')
+                    area = details.select('li.hidden-xs.offer-item-area')[0].text.split('m')[0].replace(' ', '')
                     rooms = details.select('li.offer-item-rooms.hidden-xs')[0].text.split(' ')[0]
 
                     all.append({
-                        "location": location,
-                        "zł/m²": price_per_meter,
-                        "zł": price,
-                        "m²": area,
-                        "rooms": rooms
+                        "Krakow": location.replace('Kraków, ', ''),
+                        "zł/m²": int(price_per_meter.replace(',', '.')),
+                        "zł": float(price.replace(',', '.')),
+                        "m²": float(area.replace(',', '.')),
+                        "pokoje": int(rooms)
                     })
+
+        df = pd.DataFrame(all)
+        print(df)
 
     def run(self):
         self.getPageData()
