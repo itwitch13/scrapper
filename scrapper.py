@@ -4,6 +4,7 @@ import pandas as pd
 from bs4 import BeautifulSoup as soup  # HTML data structure
 from urllib.request import urlopen as uReq  # Web client
 from mongo import MongoDatabase
+from hadoop import Hadoop
 
 
 class Scrapper:
@@ -11,6 +12,7 @@ class Scrapper:
         self.data_page = []
         self.all_info = []
         self.db = MongoDatabase()
+        self.hd = Hadoop()
 
     def get_page_number(self):
         page_number = 1
@@ -26,8 +28,11 @@ class Scrapper:
         # mieszkania w Krakowie od 30m²
         self.number_page_url = 'https://www.otodom.pl/sprzedaz/nowe-mieszkanie/krakow/?search%5Bfilter_float_m%3Afrom%5D=30&search%5Bregion_id%5D=6&search%5Bcity_id%5D=38&nrAdsPerPage=72&page={}'.format(page_number)
         # mieszkania w Krakowie od 30-50m², 2-3 pokoi, max 8.500zł/m²
-        self.page_url = 'https://www.otodom.pl/sprzedaz/nowe-mieszkanie/krakow/?search%5Bfilter_float_price_per_m%3Ato%5D=8500&search%5Bfilter_float_m%3Afrom%5D=35&search%5Bfilter_float_m%3Ato%5D=50&search%5Bfilter_enum_rooms_num%5D%5B0%5D=2&search%5Bfilter_enum_rooms_num%5D%5B1%5D=3&search%5Bregion_id%5D=6&search%5Bcity_id%5D=38&nrAdsPerPage=72&page={}'.format(page_number)
+        # self.page_url = 'https://www.otodom.pl/sprzedaz/nowe-mieszkanie/krakow/?search%5Bfilter_float_price_per_m%3Ato%5D=8500&search%5Bfilter_float_m%3Afrom%5D=35&search%5Bfilter_float_m%3Ato%5D=50&search%5Bfilter_enum_rooms_num%5D%5B0%5D=2&search%5Bfilter_enum_rooms_num%5D%5B1%5D=3&search%5Bregion_id%5D=6&search%5Bcity_id%5D=38&nrAdsPerPage=72&page={}'.format(page_number)
+        # mieszkania w Krakowie od 35m²
+        self.page_url ='https://www.otodom.pl/sprzedaz/nowe-mieszkanie/krakow/?search%5Bfilter_float_m%3Afrom%5D=35&search%5Bfilter_enum_rooms_num%5D%5B0%5D=1&search%5Bfilter_enum_rooms_num%5D%5B1%5D=2&search%5Bfilter_enum_rooms_num%5D%5B2%5D=3&search%5Bfilter_enum_rooms_num%5D%5B3%5D=4&search%5Bfilter_enum_rooms_num%5D%5B4%5D=5&search%5Bregion_id%5D=6&search%5Bcity_id%5D=38&nrAdsPerPage=72&page={}'.format(page_number)
         client = uReq(self.page_url)
+        print("get data from url: page {}...".format(page_number))
         self.data_page = soup(client.read(), "html.parser")
         client.close()
 
@@ -47,11 +52,12 @@ class Scrapper:
                     area = details.select('li.hidden-xs.offer-item-area')[0].text.split('m')[0].replace(' ', '')
                     rooms = details.select('li.offer-item-rooms.hidden-xs')[0].text.split(' ')[0]
 
+                    # Krakow, zł / m², zł, m², pokoje
                     self.all_info.append({
-                        "Krakow": location.replace('Kraków, ', ''),
-                        "zł/m²": int(price_per_meter.replace(',', '.')),
-                        "zł": float(price.replace(',', '.')),
-                        "m²": float(area.replace(',', '.')),
+                        "miasto": location.replace('Kraków, ', ''),
+                        "zl/metr2": int(price_per_meter.replace(',', '.')),
+                        "koszt": float(price.replace(',', '.')),
+                        "metraz": float(area.replace(',', '.')),
                         "pokoje": int(rooms)
                     })
 
@@ -63,14 +69,17 @@ class Scrapper:
             self.get_flat_info()
 
         df = pd.DataFrame(self.all_info)
-        self.db.upload_dataframe(df)
+        self.db.upload_dataframe_to_cloud(df)
+        self.db.upload_dataframe_to_local(df)
 
         headers = self.all_info[0].keys()
-        with open('./flat_info.csv', 'w', newline='') as output_file:
+        with open('flat_info.csv', 'w', newline='') as output_file:
             all_info_file = csv.DictWriter(output_file, headers)
             all_info_file.writeheader()
             all_info_file.writerows(self.all_info)
 
+        # self.db.hadoop_mkdir()
+        # self.db.add_file_to_hdfs()
 
 
 scrapper = Scrapper()
