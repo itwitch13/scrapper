@@ -85,7 +85,8 @@ class Scrapper:
             all_info_file.writeheader()
             all_info_file.writerows(self.all_info)
 
-
+        self.hd.hadoop_mkdir()
+        self.hd.add_file_to_hdfs(date)
 
 scrapper = Scrapper()
 scrapper.run()
