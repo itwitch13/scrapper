@@ -4,5 +4,5 @@ The application downloads data from the website www.otodom.pl on the basis of we
 
 - Periodic / on-demand download data
 - Generating statistics of flat prices/area/localization
-- 
+
 The application has been fully implemented in Python with the use of available libraries: Pandas, BeautifulSoup, MongoClient, Datetime etc.
